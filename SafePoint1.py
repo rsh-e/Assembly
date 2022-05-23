@@ -23,7 +23,7 @@ def write_code():
     line_count = 1
 
     # You can write the program until you type in the Halt command where the code writing stops
-    while line != ":q":
+    while line != "HALT":
         line = input(str(line_count) + "  ")
         lines.append(line)
         line_count = line_count + 1
@@ -46,18 +46,12 @@ def explicit_mem_check(line_to_exec):
                 if line_to_exec[3][0] == ";" or "\n":
                     return True
                 else:
-                    print("Error:")
-                    print("Command size has exceeded in", line_to_exec[3], "\nIn command", line_to_exec)
                     return False
             except:
                 return True
         else:
-            print("Error:")
-            print("The command must have a register or number as the second part of the command in", line_to_exec)
             return False
     else:
-        print("Error:")
-        print("The command must have a register as the first part of the command in", line_to_exec)
         return False
 
 
@@ -70,18 +64,12 @@ def explicit_com_check(line_to_exec):
                 if line_to_exec[4][0] == ";" or "\n":
                     return True
                 else:
-                    print("Error:")
-                    print("Command size has exceeded in", line_to_exec[4], "\nIn command", line_to_exec)
                     return False
             except:
                 return True
         else:
-            print("Error:")
-            print("The fourth part of the command must be a register(Rn) or a number(#n) in", line_to_exec)
             return False
     else:
-        print("Error")
-        print("The second and third part of the command must be a register(Rn) in", line_to_exec)
         return False
 
 
@@ -99,29 +87,29 @@ def explicit_cmp_check(line_to_exec):
                     if label in command:
                         label_count = label_count + 1
                         if label_count == 2:
-                            branch = [commands[i+1]]
-                            compile(branch)
+                            command_number = i+1
+                            branch = [commands[command_number]]
+                            # VERIFY ME HERE
+                            while branch != "HALT":
+                                branch = [commands[command_number]]
+                                compile(branch)
+                                if command_number == len(commands) - 1:
+                                    break
+                                else:
+                                    command_number = command_number + 1
                             if line_to_exec[5] == "HALT":
                                 #The program stops execution
                                 return False
-                            else:
+                            #else:
                                 pass
         else:
-            print("Error:")
-            print("The second and third part of the command should either be a register or number", "\nin command", line_to_exec)
             return False
     else:
-        print("Error:")
-        print("The first part of the command should be a compare statement part of", *cmp_statements, "\nIn command", line_to_exec)
         return False
 
 def cmp_true(line_to_exec):
-    try:
-        r1 = registers[int(line_to_exec[2][1:])]
-        r2 = registers[int(line_to_exec[3][1:])]
-    except:
-        print("The registers mist be denoted with numbers in command", line_to_exec)
-        return False
+    r1 = registers[int(line_to_exec[2][1:])]
+    r2 = registers[int(line_to_exec[3][1:])]
     if line_to_exec[1] == "LT":
         return r1 < r2
     elif line_to_exec[1] == "GT":
@@ -139,12 +127,8 @@ def cmp_true(line_to_exec):
 
 ## This function executes commands like LDR, STR, MOV, CPY (worry about LDR later)
 def exec_memory_ops(line_to_exec):
-    try:
-        address_to_store = int(line_to_exec[1][1:])
-        value_to_store = int(line_to_exec[2][1:])
-    except:
-        print("The registers must be denoted with numbers in command", line_to_exec)
-        return False
+    address_to_store = int(line_to_exec[1][1:])
+    value_to_store = int(line_to_exec[2][1:])
     # To store a value in a register. The register is assigned the value of the variable
     if line_to_exec[0] == "STR":
         registers[address_to_store] = value_to_store
@@ -155,25 +139,20 @@ def exec_memory_ops(line_to_exec):
     #
     elif line_to_exec[0] == "CPY":
         registers[address_to_store] = registers[value_to_store]
-    #else:
-    #    print("Invalid")
-    #    return False
+    else:
+        return False
 
 
 # This function executes commands like ADD, SUB, AND, ORR, EOR, LSL, LSR
 def exec_comp_ops(line_to_exec):
-    try:
-        # This variable specifies the address where the variable is stored
-        address_to_store = int(line_to_exec[1][1:])
-        # The variable specifies the address of the first operand
-        value_to_operate1 = int(line_to_exec[2][1:])
-        # This value specifies the address of the second operand(for #)
-        value_to_operate2 = int(line_to_exec[3][1:])
-        # This value specifies the address of the second operand(for registers)
-        value_to_operate2_r = int(line_to_exec[3][1:])
-    except:
-        print("The registers must be denoted with number in command", line_to_exec)
-        return False
+    # This variable specifies the address where the variable is stored
+    address_to_store = int(line_to_exec[1][1:])
+    # The variable specifies the address of the first operand
+    value_to_operate1 = int(line_to_exec[2][1:])
+    # This value specifies the address of the second operand(for #)
+    value_to_operate2 = int(line_to_exec[3][1:])
+    # This value specifies the address of the second operand(for registers)
+    value_to_operate2_r = int(line_to_exec[3][1:])
 
     # The program then performs the operations
     if line_to_exec[0] == "ADD":
@@ -247,25 +226,19 @@ def syntax_check(line_to_exec):
     # This checks if it's a memory operation. If it is, the program then executes it.
     if line_to_exec[0] in memory_ops:
         if len(line_to_exec) >= 3:
-            no_error = explicit_mem_check(line_to_exec)
-            if no_error: 
+            if explicit_mem_check(line_to_exec): 
                 exec_memory_ops(line_to_exec)
-            #else:
-            #    print("Print")
+            else:
+                return "Invalid command"
         else:
-            print("Error:")
-            print("Invalid command size for memory operation", line_to_exec[0], "\nThe expected size is 3. In command,", *line_to_exec)
-            return False
-
+            return "Invalid command size for memory operation", line_to_exec[0]
+    # This checks if it's a computational operation. If it is, the program then executes it.
     elif line_to_exec[0] in comp_ops:
         if len(line_to_exec) >= 4:
-            no_error = explicit_com_check(line_to_exec)
-            if no_error: 
+            if explicit_com_check(line_to_exec): 
                    exec_comp_ops(line_to_exec) ## Last seen here
         else:
-            print("Error:")
-            print("Invalid command size for memory operation", line_to_exec[0], "\nThe expected size is 4. In command,", *line_to_exec)
-            return False
+            return "Invalid command size for memory operation", line_to_exec[0]
     # This checks if it's compare and branch statement. If it is, the program then executes it.
     elif line_to_exec[0] == "CMP":
         if len(line_to_exec) >= 5:
@@ -273,27 +246,24 @@ def syntax_check(line_to_exec):
             if explicit_cmp_check(line_to_exec) == False:
                 return False
         else:
-            print("Error")
-            print("Invalid command size for compare operation", line_to_exec[0], "\nExpected Size is 5. In command", *line_to_exec) 
             return False
+            
 
 
 
-# This if the function where the code is compiles and executed
+# This if thr function where the code is compiles and executed
 def compile(commands):  
     valid_commands = ["STR", "ADD", "SUB", "MOV", "CMP", "B", "AND", "ORR", "EOR", "MVN", "LSL", "LSR", "CPY", "HALT"]
     for command in commands:
         line_to_exec = get_line(command)
         if line_to_exec[0] in valid_commands:
-            #if line_to_exec[0] == "\n" or ":q":
-            # Come back to this part since there is the program end statement here.
-             #   print("Program executed without errors")
-            #syntax_check(line_to_exec)
-            error = syntax_check(line_to_exec)
-            if error == False:
+            if line_to_exec[0] == "\n":
+                print("Program executed without errors")
+            syntax_check(line_to_exec)
+            if syntax_check(line_to_exec) == False:
                 break
         elif len(line_to_exec) == 1:
-            print("Label:", "'" + line_to_exec[0] + "'", "is undeclared")
+            print("Label", line_to_exec, "is undeclared previously")
         else:
             print("Invalid command", line_to_exec[0], "\nError found with line:", command)
             return False
@@ -334,11 +304,10 @@ def get_commands():
 if __name__ == "__main__":
     # The commands needed to be executed are stored in the get_commands variable
     commands = get_commands()
-    print()
     # The commands then get compiled and executed
     compile(commands)
     # We can then see the memory from the program
-    print("\nMemory: ", registers)
+    print("Memory: ", registers)
 
     '''
     # This is the key. Convert the commands to be executed with the following
@@ -347,3 +316,4 @@ if __name__ == "__main__":
     '''
 
 ## This is a test
+
